@@ -31,7 +31,7 @@ const routes: SidebarRoute[] = [
 ]
 
 export const Sidebar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = useLocation().pathname
 
   return (
