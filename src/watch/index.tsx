@@ -32,18 +32,18 @@ const WatchVideo = () => {
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>
 
-  const options = {
-    autoplay: true,
-    controls: true,
-    responsive: true,
-    fluid: true,
-    sources: [
-      {
-        src: `${import.meta.env.VITE_API_URL}/${videoData?.video.videoPath}`,
-        type: "application/x-mpegURL",
-      },
-    ],
-  }
+  // const options = {
+  //   autoplay: true,
+  //   controls: true,
+  //   responsive: true,
+  //   fluid: true,
+  //   sources: [
+  //     {
+  //       src: `${import.meta.env.VITE_API_URL}/${videoData?.video.videoPath}`,
+  //       type: "application/x-mpegURL",
+  //     },
+  //   ],
+  // }
 
   return (
     <div className="flex h-screen w-screen">
@@ -53,7 +53,11 @@ const WatchVideo = () => {
           <h1 className="text-2xl font-semibold mb-4 text-muted">
             Watch Video
           </h1>
-          <VideoPlayer options={options} />
+          <VideoPlayer
+            src={`${import.meta.env.VITE_API_URL}/${
+              videoData?.video.videoPath
+            }`}
+          />
         </div>
       </div>
     </div>

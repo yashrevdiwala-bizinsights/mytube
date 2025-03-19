@@ -1,142 +1,255 @@
-import { useRef, useEffect, useState } from "react"
-import videojs from "video.js"
-import "video.js/dist/video-js.css"
-import "videojs-hls-quality-selector"
+import Hls from "hls.js";
+import { Fullscreen, LucideIcon, Pause, Play, RotateCcw } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
-type VideoJsPlayerWithHls = ReturnType<typeof videojs>
-
-interface VhsTech {
-  vhs?: {
-    representations: () => Representation[]
-  }
-}
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { VolumeControl } from "./volumeControl";
 
 interface VideoPlayerProps {
-  options: {
-    autoplay: boolean
-    controls: boolean
-    responsive: boolean
-    fluid: boolean
-    sources: {
-      src: string | undefined
-      type: string
-    }[]
-  }
+  src: string;
 }
 
-interface Representation {
-  height: number
-  enabled: (flag: boolean) => void
-}
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const hideControlsTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-interface QualityOption {
-  label: string
-  value: number | "auto"
-}
-
-export const VideoPlayer = ({ options }: VideoPlayerProps) => {
-  const videoRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<VideoJsPlayerWithHls>(null)
-  const [qualities, setQualities] = useState<QualityOption[]>([])
+  const [isPlaying, setIsPlaying] = useState<boolean | "ended">(false);
+  const [volume, setVolume] = useState(0);
+  const [controlsVisible, setControlsVisible] = useState<boolean>(false);
+  const [qualities, setQualities] = useState<number[]>([]);
+  const [selectedQuality, setSelectedQuality] = useState<number>(-1);
 
   useEffect(() => {
-    // Make sure Video.js player is only initialized once
-    if (!playerRef.current) {
-      // The Video.js player needs to be _inside_ the component el for React 18 Strict Mode.
-      const videoElement = document.createElement("video-js")
+    const setupHls = () => {
+      const video = videoRef.current;
 
-      videoElement.classList.add("vjs-big-play-centered")
-      videoRef.current?.appendChild(videoElement)
+      if (!video) {
+        console.error("No video element found on Plyr instance");
+        return;
+      }
 
-      const player = (playerRef.current = videojs(videoElement, options, () => {
-        videojs.log("player is ready")
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
 
-        player.on("loadedmetadata", () => {
-          // Cast the tech instance to our VhsTech interface
-          const tech = player.tech(true) as unknown as VhsTech
-          const reps: Representation[] =
-            (tech.vhs && tech.vhs.representations()) || []
-          if (reps.length > 0) {
-            // Map each representation to a quality option using the height as identifier
-            const qualityOptions: QualityOption[] = reps.map((rep) => ({
-              label: `${rep.height}p`,
-              value: rep.height,
-            }))
-            // Remove duplicates and add an "Auto" option
-            const uniqueQualities = Array.from(
-              new Map(qualityOptions.map((item) => [item.value, item])).values()
-            )
-            uniqueQualities.sort((a, b) =>
-              typeof a.value === "number" && typeof b.value === "number"
-                ? b.value - a.value
-                : 0
-            )
-            uniqueQualities.unshift({ label: "Auto", value: "auto" })
-            setQualities(uniqueQualities)
-          }
-        })
-      }))
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.currentLevel = -1; // auto quality
+
+        hls.on(Hls.Events.MANIFEST_PARSED, async () => {
+          const availableQualities = hls.levels
+            .map((level) => level.height)
+            .filter((value, index, self) => self.indexOf(value) === index)
+            .sort((a, b) => b - a);
+          setQualities(availableQualities);
+          setSelectedQuality(-1);
+
+          // Start the video
+          video.play();
+
+          setIsPlaying(!video.paused);
+        });
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        // For browsers that support HLS natively (like Safari)
+        video.src = src;
+      }
+    };
+
+    // Wait until the Plyr instance is ready
+    if (videoRef.current) {
+      setupHls();
     } else {
-      const player = playerRef.current
-
-      player.autoplay(options.autoplay)
-      player.src(options.sources)
+      const interval = setInterval(() => {
+        if (videoRef.current) {
+          setupHls();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
     }
-  }, [options, videoRef])
-
-  const handleQualityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = e.target.value
-    const player = playerRef.current
-    if (!player) return
-
-    // Cast the tech instance to our VhsTech interface
-    const tech = player.tech(true) as unknown as VhsTech
-    const reps: Representation[] =
-      (tech.vhs && tech.vhs.representations()) || []
-
-    if (selected === "auto") {
-      // Enable all representations for adaptive bitrate switching
-      reps.forEach((rep) => rep.enabled(true))
-    } else {
-      const quality = parseInt(selected, 10)
-      // Disable representations that do not match the selected quality
-      reps.forEach((rep) => {
-        rep.enabled(rep.height === quality)
-      })
-    }
-  }
-
-  // Dispose the Video.js player when the functional component unmounts
-  useEffect(() => {
-    const player = playerRef.current
 
     return () => {
-      if (player && !player.isDisposed()) {
-        player.dispose()
-        playerRef.current = null
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
       }
+    };
+  }, [src]);
+
+  const handleQualitySelect = (quality: number) => {
+    if (!hlsRef.current) return;
+
+    if (quality === -1) {
+      hlsRef.current.currentLevel = -1;
+    } else {
+      const levelIndex = hlsRef.current.levels.findIndex(
+        (level) => level.height === quality
+      );
+      hlsRef.current.currentLevel = levelIndex;
     }
-  }, [playerRef])
+
+    setSelectedQuality(quality);
+  };
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    if (video.paused || video.ended) {
+      video.play();
+    } else {
+      video.pause();
+    }
+
+    setIsPlaying(!video.paused);
+  };
+
+  const onVolumeChange = (value: number) => {
+    setVolume(+value);
+    if (videoRef?.current) {
+      videoRef.current.muted = value === 0;
+      videoRef.current.volume = +value * 0.01;
+    }
+  };
+
+  const toggleMute = () => {
+    const isMuted = volume === 0;
+
+    setVolume(isMuted ? 100 : 0);
+
+    if (videoRef?.current) {
+      videoRef.current.muted = !isMuted;
+      videoRef.current.volume = isMuted ? 1 : 0;
+    }
+  };
+
+  useEffect(() => {
+    onVolumeChange(100);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      video.requestFullscreen();
+    }
+  };
+
+  const handleControlsVisibility = () => {
+    setControlsVisible(true);
+
+    if (hideControlsTimerRef.current) {
+      clearTimeout(hideControlsTimerRef.current);
+    }
+
+    hideControlsTimerRef.current = setTimeout(() => {
+      setControlsVisible(false);
+    }, 5000);
+  };
+
+  const PlayIcon: LucideIcon =
+    isPlaying === "ended" ? RotateCcw : isPlaying ? Pause : Play;
 
   return (
-    <div>
-      <div data-vjs-player style={{ width: "600px" }}>
-        <div ref={videoRef} />
-      </div>
-      {qualities.length > 0 && (
-        <div style={{ marginTop: "10px" }}>
-          <label htmlFor="qualitySelector">Quality: </label>
-          <select id="qualitySelector" onChange={handleQualityChange}>
-            {qualities.map((quality, idx) => (
-              <option key={idx} value={quality.value}>
-                {quality.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-    </div>
-  )
-}
+    <div className="flex flex-col items-center">
+      <div
+        className="relative"
+        onMouseMove={handleControlsVisibility}
+        onMouseOut={() => setControlsVisible(false)}
+      >
+        <video
+          autoPlay
+          className={cn(
+            controlsVisible ? "cursor-auto" : "cursor-none",
+            "rounded-md h-[500px]"
+          )}
+          ref={videoRef}
+          onEnded={(e) => e.currentTarget.ended && setIsPlaying("ended")}
+        />
 
-export default VideoPlayer
+        <div className="absolute rounded-b-md bottom-0 left-0 p-2 bg-gradient-to-br bg-black/50 bg-opacity-50 w-full text-white">
+          <div className="flex items-center justify-between">
+            <VolumeControl
+              onToggle={toggleMute}
+              onChange={onVolumeChange}
+              value={volume}
+            />
+
+            <div className="flex flex-col items-center gap-2">
+              {/* <Slider /> */}
+              <Button
+                variant="ghost"
+                className="h-7 w-7 transition-all duration-300"
+                onClick={togglePlay}
+              >
+                <PlayIcon />
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                onValueChange={(e) => handleQualitySelect(Number(e))}
+                value={selectedQuality.toString()}
+              >
+                <SelectTrigger className="w-[180px] text-white outline-0 border-none ring-0 cursor-pointer">
+                  <SelectValue placeholder="Select a fruit" />
+                </SelectTrigger>
+                <SelectContent
+                  onMouseOver={() => setControlsVisible(true)}
+                  position="popper"
+                  side="bottom"
+                  align="end"
+                  sideOffset={5}
+                >
+                  <SelectGroup>
+                    <SelectLabel>Quality</SelectLabel>
+                    <SelectItem className="cursor-pointer" value={"-1"}>
+                      Auto
+                    </SelectItem>
+                    {qualities.map((quality) => (
+                      <SelectItem
+                        key={quality}
+                        className="cursor-pointer"
+                        value={quality.toString()}
+                      >
+                        {quality}p
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="ghost"
+                className="h-7 w-7 transition-all duration-300"
+                onClick={toggleFullscreen}
+              >
+                <Fullscreen />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
