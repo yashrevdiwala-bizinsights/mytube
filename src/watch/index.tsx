@@ -1,24 +1,24 @@
-import { useSearchParams } from "react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useSearchParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 
-import { Navbar } from "@/components/navbar"
-import api from "@/lib/api"
-import { VideoPlayer } from "./components/videoPlayer"
+import { Navbar } from "@/components/navbar";
+import api from "@/lib/api";
+import { VideoPlayer } from "./components/videoPlayer";
 
 interface VideoData {
-  video: { id: number; videoTitle: string; videoPath: string }
+  video: { id: number; videoTitle: string; videoPath: string };
 }
 
 const fetchVideo = async (id: string | null) => {
-  if (!id) return
+  if (!id) return;
 
-  const res = await api.get(`/video/get/${id}`)
-  return res.data
-}
+  const res = await api.get(`/video/get/${id}`);
+  return res.data;
+};
 
 const WatchVideo = () => {
-  const [searchParams] = useSearchParams()
-  const params = searchParams.get("v")
+  const [searchParams] = useSearchParams();
+  const params = searchParams.get("v");
 
   const {
     data: videoData,
@@ -27,23 +27,10 @@ const WatchVideo = () => {
   } = useQuery<VideoData>({
     queryKey: ["video", params],
     queryFn: () => fetchVideo(params),
-  })
+  });
 
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
-
-  // const options = {
-  //   autoplay: true,
-  //   controls: true,
-  //   responsive: true,
-  //   fluid: true,
-  //   sources: [
-  //     {
-  //       src: `${import.meta.env.VITE_API_URL}/${videoData?.video.videoPath}`,
-  //       type: "application/x-mpegURL",
-  //     },
-  //   ],
-  // }
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="flex h-screen w-screen">
@@ -61,6 +48,6 @@ const WatchVideo = () => {
         </div>
       </div>
     </div>
-  )
-}
-export default WatchVideo
+  );
+};
+export default WatchVideo;

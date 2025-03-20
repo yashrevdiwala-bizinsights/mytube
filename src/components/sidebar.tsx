@@ -1,15 +1,15 @@
-import { useState } from "react"
-import { useLocation } from "react-router"
-import { Home, Library, LucideIcon, Menu, Video } from "lucide-react"
+import { useState } from "react";
+import { useLocation } from "react-router";
+import { Home, LucideIcon, Menu, Upload } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "./ui/button"
-import { NavItem } from "./nav-item"
+import { cn } from "@/lib/utils";
+import { NavItem } from "./nav-item";
+import { Button } from "./ui/button";
 
 interface SidebarRoute {
-  path: string
-  label: string
-  icon: LucideIcon
+  path: string;
+  label: string;
+  icon: LucideIcon;
 }
 
 const routes: SidebarRoute[] = [
@@ -19,26 +19,21 @@ const routes: SidebarRoute[] = [
     icon: Home,
   },
   {
-    path: "/subscriptions",
-    label: "Subscriptions",
-    icon: Video,
+    path: "/upload",
+    label: "Upload",
+    icon: Upload,
   },
-  {
-    path: "/library",
-    label: "Library",
-    icon: Library,
-  },
-]
+];
 
 export const Sidebar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const pathname = useLocation().pathname
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = useLocation().pathname;
 
   return (
     <aside
       className={cn(
         sidebarOpen ? "w-60" : "w-20 items-center",
-        "bg-gray-900 text-white transition-all duration-300 p-4 flex flex-col gap-6"
+        "bg-gray-900 text-white transition-all duration-300 p-4 flex flex-col gap-6 fixed top-0 left-0 h-full pt-20"
       )}
     >
       <Button
@@ -62,5 +57,5 @@ export const Sidebar = () => {
         ))}
       </nav>
     </aside>
-  )
-}
+  );
+};

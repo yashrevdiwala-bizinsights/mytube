@@ -1,13 +1,13 @@
-import { cn } from "@/lib/utils"
-import { LucideIcon } from "lucide-react"
-import { Link } from "react-router"
+import { cn } from "@/lib/utils";
+import { LucideIcon } from "lucide-react";
+import { Link } from "react-router";
 
 interface NavItemProps {
-  label: string
-  icon: LucideIcon
-  path: string
-  isOpen?: boolean
-  isActive?: boolean
+  label: string;
+  icon: LucideIcon;
+  path: string;
+  isOpen?: boolean;
+  isActive?: boolean;
 }
 
 export const NavItem = ({
@@ -29,5 +29,5 @@ export const NavItem = ({
         <Icon className="w-5 h-5" /> {isOpen && label}
       </Link>
     </>
-  )
-}
+  );
+};

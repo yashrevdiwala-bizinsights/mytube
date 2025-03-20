@@ -1,6 +1,6 @@
-import Hls from "hls.js";
-import { Fullscreen, LucideIcon, Pause, Play, RotateCcw } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
+import { Fullscreen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +14,15 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { VolumeControl } from "./volumeControl";
+import { PlayerControl } from "./playerControl";
 
 interface VideoPlayerProps {
   src: string;
+}
+
+export interface VideoPlayerDuration {
+  currentDuration: number;
+  totalDuration: number;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
@@ -25,20 +31,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
   const hideControlsTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean | "ended">(false);
+  const [duration, setDuration] = useState<VideoPlayerDuration>({
+    currentDuration: 0,
+    totalDuration: 0,
+  });
   const [volume, setVolume] = useState(0);
   const [controlsVisible, setControlsVisible] = useState<boolean>(false);
   const [qualities, setQualities] = useState<number[]>([]);
   const [selectedQuality, setSelectedQuality] = useState<number>(-1);
 
   useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
     const setupHls = () => {
-      const video = videoRef.current;
-
-      if (!video) {
-        console.error("No video element found on Plyr instance");
-        return;
-      }
-
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
@@ -64,11 +71,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
 
           setIsPlaying(!video.paused);
         });
+
+        hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
+          setDuration({
+            currentDuration: video.currentTime,
+            totalDuration: data.details.totalduration,
+          });
+        });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // For browsers that support HLS natively (like Safari)
         video.src = src;
       }
     };
+
+    const handleTimeUpdate = () => {
+      setDuration({
+        currentDuration: video.currentTime,
+        totalDuration: video.duration,
+      });
+    };
+    video.addEventListener("timeupdate", handleTimeUpdate);
 
     // Wait until the Plyr instance is ready
     if (videoRef.current) {
@@ -80,7 +102,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
           clearInterval(interval);
         }
       }, 100);
-      return () => clearInterval(interval);
+
+      return () => {
+        video.removeEventListener("timeupdate", handleTimeUpdate);
+        clearInterval(interval);
+      };
     }
 
     return () => {
@@ -118,6 +144,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
     }
 
     setIsPlaying(!video.paused);
+  };
+
+  const handleDurationChange = (value: number[]) => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    video.currentTime = value[0];
+
+    setDuration({
+      currentDuration: value[0],
+      totalDuration: video.duration,
+    });
   };
 
   const onVolumeChange = (value: number) => {
@@ -167,9 +206,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
     }, 5000);
   };
 
-  const PlayIcon: LucideIcon =
-    isPlaying === "ended" ? RotateCcw : isPlaying ? Pause : Play;
-
   return (
     <div className="flex flex-col items-center">
       <div
@@ -195,16 +231,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
               value={volume}
             />
 
-            <div className="flex flex-col items-center gap-2">
-              {/* <Slider /> */}
-              <Button
-                variant="ghost"
-                className="h-7 w-7 transition-all duration-300"
-                onClick={togglePlay}
-              >
-                <PlayIcon />
-              </Button>
-            </div>
+            <PlayerControl
+              isPlaying={isPlaying}
+              duration={duration}
+              togglePlay={togglePlay}
+              handleDurationChange={handleDurationChange}
+            />
 
             <div className="flex items-center gap-2">
               <Select
@@ -217,7 +249,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
                 <SelectContent
                   onMouseOver={() => setControlsVisible(true)}
                   position="popper"
-                  side="bottom"
+                  side="top"
                   align="end"
                   sideOffset={5}
                 >

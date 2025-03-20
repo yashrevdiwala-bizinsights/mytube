@@ -1,9 +1,9 @@
-import { Search, User } from "lucide-react"
+import { Search, User } from "lucide-react";
 
 export const Navbar = () => {
   return (
     <div>
-      <header className="flex justify-between items-center p-4 bg-gray-800 text-white">
+      <header className="flex justify-between items-center p-4 bg-gray-800 text-white fixed top-0 left-0 w-full z-10">
         <div className="flex items-center gap-2">
           <Search className="w-6 h-6" />
           <input
@@ -15,5 +15,5 @@ export const Navbar = () => {
         <User className="w-6 h-6" />
       </header>
     </div>
-  )
-}
+  );
+};

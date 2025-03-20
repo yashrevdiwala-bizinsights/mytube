@@ -1,5 +1,5 @@
-import { Link } from "react-router"
-import { AlertTriangle } from "lucide-react"
+import { Link } from "react-router";
+import { AlertTriangle } from "lucide-react";
 
 export default function NotFoundPage() {
   return (
@@ -19,5 +19,5 @@ export default function NotFoundPage() {
         <span className="text-white">Go Home</span>
       </Link>
     </div>
-  )
+  );
 }

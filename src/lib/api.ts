@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios, { AxiosError } from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -6,24 +6,24 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 api.interceptors.request.use(
   (config) => {
-    return config
+    return config;
   },
   (error) => {
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
 api.interceptors.response.use(
   (response) => {
-    return response
+    return response;
   },
-  (error) => {
-    return Promise.reject(error)
+  (error: AxiosError) => {
+    return Promise.reject(error.response?.data);
   }
-)
+);
 
-export default api
+export default api;

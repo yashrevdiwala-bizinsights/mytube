@@ -1,31 +1,31 @@
-import { useEffect, useState } from "react"
-import { Link } from "react-router"
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Navbar } from "./components/navbar"
-import api from "./lib/api"
+import { Card, CardContent } from "@/components/ui/card";
+import { Navbar } from "./components/navbar";
+import api from "./lib/api";
 
 interface Video {
-  id: number
-  videoTitle: string
-  videoPath: string
+  id: number;
+  videoTitle: string;
+  videoPath: string;
 }
 
 const App = () => {
-  const [videos, setVideos] = useState<Video[]>()
+  const [videos, setVideos] = useState<Video[]>();
 
   useEffect(() => {
     api.get("/video").then((res) => {
-      setVideos(res.data.videos)
-    })
-  }, [])
+      setVideos(res.data.videos);
+    });
+  }, []);
 
   return (
-    <div className="flex h-screen w-screen">
+    <div className="flex h-full w-full ml-20">
       <div className="flex-1 flex flex-col">
         <Navbar />
 
-        <main className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <main className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-20">
           {videos?.map((video, i) => (
             <Link to={`/watch?v=${video.id}`} key={i}>
               <Card className="bg-gray-800 text-white rounded-lg overflow-hidden border-0">
@@ -50,8 +50,8 @@ const App = () => {
         </main>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
 
