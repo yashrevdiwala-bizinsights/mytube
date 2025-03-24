@@ -53,7 +53,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
 
       if (Hls.isSupported()) {
         const hls = new Hls({
-          startLevel: 0,
+          startLevel: -1,
           capLevelToPlayerSize: true,
           testBandwidth: true,
 
@@ -254,9 +254,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
                 value={selectedQuality.toString()}
               >
                 <SelectTrigger className="w-[180px] text-white outline-0 border-none ring-0 cursor-pointer">
-                  <SelectValue placeholder="Select a fruit" />
+                  <SelectValue placeholder="Quality" />
                 </SelectTrigger>
+
                 <SelectContent
+                  className="bg-[#101727] border-none font-semibold text-white"
                   onMouseOver={() => setControlsVisible(true)}
                   position="popper"
                   side="top"
@@ -264,7 +266,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
                   sideOffset={5}
                 >
                   <SelectGroup>
-                    <SelectLabel>Quality</SelectLabel>
+                    <SelectLabel className="text-white">Quality</SelectLabel>
                     <SelectItem className="cursor-pointer" value={"-1"}>
                       Auto
                     </SelectItem>
