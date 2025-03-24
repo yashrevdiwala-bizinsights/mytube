@@ -21,7 +21,7 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex h-full w-full ml-20">
+    <div className="flex min-h-screen w-full ml-20">
       <div className="flex-1 flex flex-col">
         <Navbar />
 

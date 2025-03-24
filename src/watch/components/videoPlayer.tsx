@@ -52,11 +52,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
       }
 
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({
+          startLevel: 0,
+          capLevelToPlayerSize: true,
+          testBandwidth: true,
+
+          abrEwmaFastLive: 5.0,
+          abrEwmaSlowLive: 9.0,
+          abrBandWidthFactor: 0.8,
+          abrBandWidthUpFactor: 0.7,
+          maxStarvationDelay: 4,
+        });
+
         hlsRef.current = hls;
         hls.loadSource(src);
         hls.attachMedia(video);
-        hls.currentLevel = -1; // auto quality
 
         hls.on(Hls.Events.MANIFEST_PARSED, async () => {
           const availableQualities = hls.levels
